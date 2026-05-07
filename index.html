@@ -1,0 +1,469 @@
+import { useState, useRef, useEffect } from “react”;
+
+const TOPICS = [
+{ id: “daily”, label: “Daily Life”, ja: “日常生活”, emoji: “☀️”, color: “#FF8C42” },
+{ id: “school”, label: “School”, ja: “学校”, emoji: “📚”, color: “#4ECDC4” },
+{ id: “shopping”, label: “Shopping”, ja: “買い物”, emoji: “🛍️”, color: “#C77DFF” },
+{ id: “food”, label: “Food”, ja: “食べ物”, emoji: “🍱”, color: “#FF6B9D” },
+{ id: “hobby”, label: “Hobbies”, ja: “趣味”, emoji: “🎨”, color: “#45B7D1” },
+{ id: “travel”, label: “Travel”, ja: “旅行”, emoji: “✈️”, color: “#96CEB4” },
+];
+
+const SYSTEM_PROMPT = `You are a friendly English conversation teacher helping a Japanese learner at EIKEN Grade 3 level (中学英語レベル).
+
+Rules:
+
+- Use SIMPLE English only. Short sentences. Common words.
+- EIKEN 3rd grade vocabulary (A2 level, middle school English).
+- After each of your responses, always add a “💡 ヒント:” section in Japanese with:
+1. A brief Japanese translation/explanation of what you said
+1. One useful vocabulary word or phrase from your message
+- Be very encouraging and warm. Use emoji occasionally.
+- Ask one simple question to keep the conversation going.
+- If the user makes a grammar mistake, gently correct it naturally in your response.
+- Keep responses SHORT (2-4 sentences max before the hint section).
+- Topics are everyday situations suitable for EIKEN Grade 3.`;
+
+export default function EnglishChatApp() {
+const [selectedTopic, setSelectedTopic] = useState(null);
+const [messages, setMessages] = useState([]);
+const [input, setInput] = useState(””);
+const [loading, setLoading] = useState(false);
+const [showTranslation, setShowTranslation] = useState(true);
+const messagesEndRef = useRef(null);
+
+useEffect(() => {
+messagesEndRef.current?.scrollIntoView({ behavior: “smooth” });
+}, [messages]);
+
+const startConversation = async (topic) => {
+setSelectedTopic(topic);
+setMessages([]);
+setLoading(true);
+
+```
+const starterPrompt = `Start a simple friendly conversation about "${topic.label}" (${topic.ja}). 
+Greet the user warmly and ask one simple opening question about this topic. Remember to add the 💡 ヒント: section.`;
+
+try {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: starterPrompt }],
+    }),
+  });
+  const data = await res.json();
+  const text = data.content?.find(b => b.type === "text")?.text || "";
+  setMessages([{ role: "assistant", content: text }]);
+} catch (e) {
+  setMessages([{ role: "assistant", content: "Sorry, something went wrong. Please try again! 😅" }]);
+}
+setLoading(false);
+```
+
+};
+
+const sendMessage = async () => {
+if (!input.trim() || loading) return;
+const userMsg = input.trim();
+setInput(””);
+
+```
+const newMessages = [...messages, { role: "user", content: userMsg }];
+setMessages(newMessages);
+setLoading(true);
+
+const apiMessages = newMessages.map(m => ({ role: m.role, content: m.content }));
+
+try {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      system: SYSTEM_PROMPT,
+      messages: apiMessages,
+    }),
+  });
+  const data = await res.json();
+  const text = data.content?.find(b => b.type === "text")?.text || "";
+  setMessages([...newMessages, { role: "assistant", content: text }]);
+} catch (e) {
+  setMessages([...newMessages, { role: "assistant", content: "Sorry! Please try again. 🙏" }]);
+}
+setLoading(false);
+```
+
+};
+
+const parseMessage = (content) => {
+const parts = content.split(“💡 ヒント:”);
+return {
+english: parts[0].trim(),
+hint: parts[1] ? parts[1].trim() : null,
+};
+};
+
+const handleKey = (e) => {
+if (e.key === “Enter” && !e.shiftKey) {
+e.preventDefault();
+sendMessage();
+}
+};
+
+// Topic Selection Screen
+if (!selectedTopic) {
+return (
+<div style={{
+minHeight: “100vh”,
+background: “linear-gradient(135deg, #FFF8F0 0%, #FFF0E8 50%, #F8F0FF 100%)”,
+fontFamily: “‘Georgia’, ‘Noto Serif JP’, serif”,
+display: “flex”,
+flexDirection: “column”,
+alignItems: “center”,
+padding: “2rem 1rem”,
+}}>
+{/* Header */}
+<div style={{ textAlign: “center”, marginBottom: “2.5rem” }}>
+<div style={{
+fontSize: “3.5rem”,
+marginBottom: “0.5rem”,
+filter: “drop-shadow(0 4px 8px rgba(255,140,66,0.3))”,
+}}>🌸</div>
+<h1 style={{
+fontSize: “2rem”,
+fontWeight: “bold”,
+color: “#2D1B69”,
+margin: 0,
+letterSpacing: “-0.02em”,
+}}>Eigo Chat</h1>
+<p style={{
+color: “#7C6B8E”,
+fontSize: “1rem”,
+margin: “0.5rem 0 0”,
+fontStyle: “italic”,
+}}>英検3級レベルの英会話練習</p>
+<div style={{
+marginTop: “1rem”,
+background: “rgba(255,140,66,0.15)”,
+borderRadius: “50px”,
+padding: “0.4rem 1.2rem”,
+display: “inline-block”,
+}}>
+<span style={{ color: “#FF8C42”, fontSize: “0.85rem”, fontWeight: “600” }}>
+✨ AIと英語でおしゃべりしよう！
+</span>
+</div>
+</div>
+
+```
+    {/* Topic Cards */}
+    <p style={{ color: "#7C6B8E", marginBottom: "1.2rem", fontSize: "0.95rem" }}>
+      話したいトピックを選んでください 👇
+    </p>
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(2, 1fr)",
+      gap: "1rem",
+      width: "100%",
+      maxWidth: "420px",
+    }}>
+      {TOPICS.map((topic) => (
+        <button
+          key={topic.id}
+          onClick={() => startConversation(topic)}
+          style={{
+            background: "white",
+            border: `2px solid ${topic.color}22`,
+            borderRadius: "18px",
+            padding: "1.3rem 1rem",
+            cursor: "pointer",
+            textAlign: "center",
+            transition: "all 0.2s ease",
+            boxShadow: `0 4px 16px ${topic.color}20`,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = "translateY(-3px)";
+            e.currentTarget.style.boxShadow = `0 8px 24px ${topic.color}40`;
+            e.currentTarget.style.borderColor = topic.color;
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = `0 4px 16px ${topic.color}20`;
+            e.currentTarget.style.borderColor = `${topic.color}22`;
+          }}
+        >
+          <div style={{ fontSize: "2.2rem", marginBottom: "0.4rem" }}>{topic.emoji}</div>
+          <div style={{ fontWeight: "700", color: "#2D1B69", fontSize: "0.9rem" }}>{topic.label}</div>
+          <div style={{ color: "#7C6B8E", fontSize: "0.78rem", marginTop: "0.2rem" }}>{topic.ja}</div>
+        </button>
+      ))}
+    </div>
+
+    <p style={{
+      marginTop: "2rem",
+      color: "#B0A0C0",
+      fontSize: "0.8rem",
+      textAlign: "center",
+      maxWidth: "300px",
+    }}>
+      間違えても大丈夫！<br />やさしいAI先生が教えてくれます 😊
+    </p>
+  </div>
+);
+```
+
+}
+
+// Chat Screen
+return (
+<div style={{
+minHeight: “100vh”,
+background: “linear-gradient(180deg, #FFF8F0 0%, #F8F4FF 100%)”,
+fontFamily: “‘Georgia’, serif”,
+display: “flex”,
+flexDirection: “column”,
+maxWidth: “500px”,
+margin: “0 auto”,
+}}>
+{/* Chat Header */}
+<div style={{
+background: “white”,
+borderBottom: `3px solid ${selectedTopic.color}30`,
+padding: “1rem 1.2rem”,
+display: “flex”,
+alignItems: “center”,
+gap: “0.8rem”,
+position: “sticky”,
+top: 0,
+zIndex: 10,
+boxShadow: “0 2px 12px rgba(0,0,0,0.06)”,
+}}>
+<button
+onClick={() => setSelectedTopic(null)}
+style={{
+background: “#F5F0FF”,
+border: “none”,
+borderRadius: “10px”,
+padding: “0.4rem 0.8rem”,
+cursor: “pointer”,
+color: “#7C6B8E”,
+fontSize: “0.85rem”,
+fontWeight: “600”,
+}}
+>← 戻る</button>
+<div style={{ flex: 1 }}>
+<div style={{ display: “flex”, alignItems: “center”, gap: “0.4rem” }}>
+<span style={{ fontSize: “1.4rem” }}>{selectedTopic.emoji}</span>
+<span style={{ fontWeight: “700”, color: “#2D1B69”, fontSize: “1rem” }}>
+{selectedTopic.label}
+</span>
+<span style={{ color: “#B0A0C0”, fontSize: “0.8rem” }}>({selectedTopic.ja})</span>
+</div>
+</div>
+<button
+onClick={() => setShowTranslation(!showTranslation)}
+style={{
+background: showTranslation ? `${selectedTopic.color}20` : “#F5F5F5”,
+border: `1px solid ${showTranslation ? selectedTopic.color : "#DDD"}`,
+borderRadius: “10px”,
+padding: “0.35rem 0.7rem”,
+cursor: “pointer”,
+color: showTranslation ? selectedTopic.color : “#999”,
+fontSize: “0.75rem”,
+fontWeight: “600”,
+}}
+>
+💡 {showTranslation ? “ヒントON” : “ヒントOFF”}
+</button>
+</div>
+
+```
+  {/* Messages */}
+  <div style={{
+    flex: 1,
+    overflowY: "auto",
+    padding: "1.2rem",
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
+    paddingBottom: "6rem",
+  }}>
+    {messages.map((msg, i) => {
+      const isAI = msg.role === "assistant";
+      const parsed = isAI ? parseMessage(msg.content) : null;
+
+      return (
+        <div key={i} style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: isAI ? "flex-start" : "flex-end",
+          gap: "0.4rem",
+        }}>
+          {isAI && (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.1rem" }}>
+              <div style={{
+                width: "28px", height: "28px",
+                background: `linear-gradient(135deg, ${selectedTopic.color}, ${selectedTopic.color}88)`,
+                borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "14px",
+              }}>🤖</div>
+              <span style={{ fontSize: "0.75rem", color: "#B0A0C0", fontWeight: "600" }}>AI先生</span>
+            </div>
+          )}
+
+          {/* English bubble */}
+          <div style={{
+            maxWidth: "82%",
+            background: isAI ? "white" : `linear-gradient(135deg, ${selectedTopic.color}, ${selectedTopic.color}CC)`,
+            color: isAI ? "#2D1B69" : "white",
+            borderRadius: isAI ? "4px 18px 18px 18px" : "18px 18px 4px 18px",
+            padding: "0.85rem 1.1rem",
+            fontSize: "0.95rem",
+            lineHeight: "1.6",
+            boxShadow: isAI
+              ? "0 2px 12px rgba(0,0,0,0.08)"
+              : `0 4px 16px ${selectedTopic.color}50`,
+          }}>
+            {isAI ? parsed.english : msg.content}
+          </div>
+
+          {/* Hint bubble */}
+          {isAI && parsed.hint && showTranslation && (
+            <div style={{
+              maxWidth: "82%",
+              background: `${selectedTopic.color}12`,
+              border: `1px solid ${selectedTopic.color}30`,
+              borderRadius: "4px 14px 14px 14px",
+              padding: "0.65rem 1rem",
+              fontSize: "0.82rem",
+              color: "#5A4A6E",
+              lineHeight: "1.6",
+            }}>
+              <span style={{ color: selectedTopic.color, fontWeight: "700", fontSize: "0.8rem" }}>
+                💡 ヒント:{" "}
+              </span>
+              {parsed.hint}
+            </div>
+          )}
+        </div>
+      );
+    })}
+
+    {loading && (
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div style={{
+          width: "28px", height: "28px",
+          background: `linear-gradient(135deg, ${selectedTopic.color}, ${selectedTopic.color}88)`,
+          borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "14px",
+        }}>🤖</div>
+        <div style={{
+          background: "white",
+          borderRadius: "4px 18px 18px 18px",
+          padding: "0.85rem 1.2rem",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+          display: "flex", gap: "5px", alignItems: "center",
+        }}>
+          {[0, 0.2, 0.4].map((delay, i) => (
+            <div key={i} style={{
+              width: "8px", height: "8px",
+              background: selectedTopic.color,
+              borderRadius: "50%",
+              animation: "bounce 0.8s ease-in-out infinite",
+              animationDelay: `${delay}s`,
+              opacity: 0.7,
+            }} />
+          ))}
+        </div>
+      </div>
+    )}
+    <div ref={messagesEndRef} />
+  </div>
+
+  {/* Input Area */}
+  <div style={{
+    position: "fixed",
+    bottom: 0,
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "100%",
+    maxWidth: "500px",
+    background: "white",
+    borderTop: `2px solid ${selectedTopic.color}20`,
+    padding: "0.9rem 1rem",
+    boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
+  }}>
+    <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end" }}>
+      <textarea
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={handleKey}
+        placeholder="英語でメッセージを入力... (Enter で送信)"
+        rows={1}
+        style={{
+          flex: 1,
+          border: `2px solid ${input ? selectedTopic.color : "#E8E0F0"}`,
+          borderRadius: "14px",
+          padding: "0.75rem 1rem",
+          fontSize: "0.95rem",
+          fontFamily: "Georgia, serif",
+          color: "#2D1B69",
+          outline: "none",
+          resize: "none",
+          background: "#FAFAFA",
+          transition: "border-color 0.2s",
+          lineHeight: "1.5",
+        }}
+      />
+      <button
+        onClick={sendMessage}
+        disabled={!input.trim() || loading}
+        style={{
+          background: input.trim() && !loading
+            ? `linear-gradient(135deg, ${selectedTopic.color}, ${selectedTopic.color}CC)`
+            : "#E8E0F0",
+          border: "none",
+          borderRadius: "14px",
+          width: "46px",
+          height: "46px",
+          cursor: input.trim() && !loading ? "pointer" : "default",
+          fontSize: "1.3rem",
+          transition: "all 0.2s",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        {loading ? "⏳" : "➤"}
+      </button>
+    </div>
+    <p style={{
+      margin: "0.4rem 0 0",
+      fontSize: "0.72rem",
+      color: "#C0B0D0",
+      textAlign: "center",
+    }}>
+      間違えても大丈夫！思い切って話してみよう ✨
+    </p>
+  </div>
+
+  <style>{`
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+  `}</style>
+</div>
+```
+
+);
+}
