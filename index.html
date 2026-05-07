@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -26,231 +25,223 @@
 <script type="text/babel">
 
 const TOPICS = [
-{ id: “daily”,    label: “Daily Life”, ja: “日常生活”, emoji: “☀️”, color: “#FF8C42” },
-{ id: “school”,   label: “School”,     ja: “学校”,     emoji: “📚”, color: “#4ECDC4” },
-{ id: “shopping”, label: “Shopping”,   ja: “買い物”,   emoji: “🛍️”, color: “#C77DFF” },
-{ id: “food”,     label: “Food”,       ja: “食べ物”,   emoji: “🍱”, color: “#FF6B9D” },
-{ id: “hobby”,    label: “Hobbies”,    ja: “趣味”,     emoji: “🎨”, color: “#45B7D1” },
-{ id: “travel”,   label: “Travel”,     ja: “旅行”,     emoji: “✈️”, color: “#96CEB4” },
+  { id: "daily",    label: "Daily Life", ja: "日常生活", emoji: "☀️", color: "#FF8C42" },
+  { id: "school",   label: "School",     ja: "学校",     emoji: "📚", color: "#4ECDC4" },
+  { id: "shopping", label: "Shopping",   ja: "買い物",   emoji: "🛍️", color: "#C77DFF" },
+  { id: "food",     label: "Food",       ja: "食べ物",   emoji: "🍱", color: "#FF6B9D" },
+  { id: "hobby",    label: "Hobbies",    ja: "趣味",     emoji: "🎨", color: "#45B7D1" },
+  { id: "travel",   label: "Travel",     ja: "旅行",     emoji: "✈️", color: "#96CEB4" },
 ];
 
 const SYSTEM_PROMPT = `You are a friendly English conversation teacher helping a Japanese learner at EIKEN Grade 3 level (中学英語レベル).
 
 Rules:
-
 - Use SIMPLE English only. Short sentences. Common words.
 - EIKEN 3rd grade vocabulary (A2 level, middle school English).
-- After each of your responses, always add a “💡 ヒント:” section in Japanese with:
-1. A brief Japanese translation/explanation of what you said
-1. One useful vocabulary word or phrase from your message
+- After each of your responses, always add a "💡 ヒント:" section in Japanese with:
+  1. A brief Japanese translation/explanation of what you said
+  2. One useful vocabulary word or phrase from your message
 - Be very encouraging and warm. Use emoji occasionally.
 - Ask one simple question to keep the conversation going.
 - If the user makes a grammar mistake, gently correct it naturally in your response.
 - Keep responses SHORT (2-4 sentences max before the hint section).`;
 
 function App() {
-const [topic, setTopic] = React.useState(null);
-const [messages, setMessages] = React.useState([]);
-const [input, setInput] = React.useState(””);
-const [loading, setLoading] = React.useState(false);
-const [showHint, setShowHint] = React.useState(true);
-const bottomRef = React.useRef(null);
+  const [topic, setTopic] = React.useState(null);
+  const [messages, setMessages] = React.useState([]);
+  const [input, setInput] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [showHint, setShowHint] = React.useState(true);
+  const bottomRef = React.useRef(null);
 
-React.useEffect(() => {
-bottomRef.current?.scrollIntoView({ behavior: “smooth” });
-}, [messages, loading]);
+  React.useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
-const callAPI = async (msgs) => {
-const res = await fetch(“https://api.anthropic.com/v1/messages”, {
-method: “POST”,
-headers: { “Content-Type”: “application/json” },
-body: JSON.stringify({
-model: “claude-sonnet-4-20250514”,
-max_tokens: 1000,
-system: SYSTEM_PROMPT,
-messages: msgs,
-}),
-});
-const data = await res.json();
-return data.content?.find(b => b.type === “text”)?.text || “Sorry, please try again! 😅”;
-};
+  const callAPI = async (msgs) => {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: msgs,
+      }),
+    });
+    const data = await res.json();
+    return data.content?.find(b => b.type === "text")?.text || "Sorry, please try again! 😅";
+  };
 
-const startChat = async (t) => {
-setTopic(t);
-setMessages([]);
-setLoading(true);
-try {
-const text = await callAPI([{
-role: “user”,
-content: `Start a simple friendly conversation about "${t.label}" (${t.ja}). Greet the user warmly and ask one simple opening question. Add the 💡 ヒント: section.`
-}]);
-setMessages([{ role: “assistant”, content: text }]);
-} catch(e) {
-setMessages([{ role: “assistant”, content: “Sorry! Something went wrong. Please try again. 😅” }]);
-}
-setLoading(false);
-};
+  const startChat = async (t) => {
+    setTopic(t);
+    setMessages([]);
+    setLoading(true);
+    try {
+      const text = await callAPI([{
+        role: "user",
+        content: `Start a simple friendly conversation about "${t.label}" (${t.ja}). Greet the user warmly and ask one simple opening question. Add the 💡 ヒント: section.`
+      }]);
+      setMessages([{ role: "assistant", content: text }]);
+    } catch(e) {
+      setMessages([{ role: "assistant", content: "Sorry! Something went wrong. Please try again. 😅" }]);
+    }
+    setLoading(false);
+  };
 
-const send = async () => {
-if (!input.trim() || loading) return;
-const userMsg = input.trim();
-setInput(””);
-const next = […messages, { role: “user”, content: userMsg }];
-setMessages(next);
-setLoading(true);
-try {
-const text = await callAPI(next);
-setMessages([…next, { role: “assistant”, content: text }]);
-} catch(e) {
-setMessages([…next, { role: “assistant”, content: “Sorry! Please try again. 🙏” }]);
-}
-setLoading(false);
-};
+  const send = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = input.trim();
+    setInput("");
+    const next = [...messages, { role: "user", content: userMsg }];
+    setMessages(next);
+    setLoading(true);
+    try {
+      const text = await callAPI(next);
+      setMessages([...next, { role: "assistant", content: text }]);
+    } catch(e) {
+      setMessages([...next, { role: "assistant", content: "Sorry! Please try again. 🙏" }]);
+    }
+    setLoading(false);
+  };
 
-const parseMsg = (content) => {
-const parts = content.split(“💡 ヒント:”);
-return { en: parts[0].trim(), hint: parts[1]?.trim() || null };
-};
+  const parseMsg = (content) => {
+    const parts = content.split("💡 ヒント:");
+    return { en: parts[0].trim(), hint: parts[1]?.trim() || null };
+  };
 
-// ── Topic Screen ──
-if (!topic) return (
-<div style={{ minHeight:“100vh”, display:“flex”, flexDirection:“column”, alignItems:“center”, padding:“2rem 1rem” }}>
-<div style={{ textAlign:“center”, marginBottom:“2rem” }}>
-<div style={{ fontSize:“3.5rem”, marginBottom:“0.4rem” }}>🌸</div>
-<h1 style={{ fontSize:“2rem”, fontWeight:“bold”, color:”#2D1B69”, letterSpacing:”-0.02em” }}>Eigo Chat</h1>
-<p style={{ color:”#7C6B8E”, fontSize:“0.95rem”, marginTop:“0.3rem”, fontStyle:“italic” }}>英検3級レベルの英会話練習</p>
-<div style={{ marginTop:“0.8rem”, background:“rgba(255,140,66,0.15)”, borderRadius:“50px”, padding:“0.4rem 1.2rem”, display:“inline-block” }}>
-<span style={{ color:”#FF8C42”, fontSize:“0.85rem”, fontWeight:“600” }}>✨ AIと英語でおしゃべりしよう！</span>
-</div>
-</div>
-
-```
-  <p style={{ color:"#7C6B8E", marginBottom:"1rem", fontSize:"0.9rem" }}>話したいトピックを選んでください 👇</p>
-
-  <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"0.9rem", width:"100%", maxWidth:"400px" }}>
-    {TOPICS.map(t => (
-      <button key={t.id} onClick={() => startChat(t)}
-        style={{ background:"white", border:`2px solid ${t.color}22`, borderRadius:"18px", padding:"1.2rem 0.8rem",
-          textAlign:"center", boxShadow:`0 4px 16px ${t.color}20`, transition:"all 0.2s" }}
-        onMouseEnter={e => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.borderColor=t.color; e.currentTarget.style.boxShadow=`0 8px 24px ${t.color}40`; }}
-        onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=`${t.color}22`; e.currentTarget.style.boxShadow=`0 4px 16px ${t.color}20`; }}>
-        <div style={{ fontSize:"2rem", marginBottom:"0.3rem" }}>{t.emoji}</div>
-        <div style={{ fontWeight:"700", color:"#2D1B69", fontSize:"0.88rem" }}>{t.label}</div>
-        <div style={{ color:"#7C6B8E", fontSize:"0.76rem", marginTop:"0.15rem" }}>{t.ja}</div>
-      </button>
-    ))}
-  </div>
-
-  <p style={{ marginTop:"1.8rem", color:"#B0A0C0", fontSize:"0.78rem", textAlign:"center" }}>
-    間違えても大丈夫！<br />やさしいAI先生が教えてくれます 😊
-  </p>
-</div>
-```
-
-);
-
-// ── Chat Screen ──
-return (
-<div style={{ minHeight:“100vh”, display:“flex”, flexDirection:“column”, maxWidth:“500px”, margin:“0 auto” }}>
-
-```
-  {/* Header */}
-  <div style={{ background:"white", borderBottom:`3px solid ${topic.color}30`, padding:"0.9rem 1rem",
-    display:"flex", alignItems:"center", gap:"0.7rem", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
-    <button onClick={() => setTopic(null)}
-      style={{ background:"#F5F0FF", border:"none", borderRadius:"10px", padding:"0.4rem 0.8rem", color:"#7C6B8E", fontSize:"0.82rem", fontWeight:"600" }}>
-      ← 戻る
-    </button>
-    <div style={{ flex:1, display:"flex", alignItems:"center", gap:"0.4rem" }}>
-      <span style={{ fontSize:"1.3rem" }}>{topic.emoji}</span>
-      <span style={{ fontWeight:"700", color:"#2D1B69", fontSize:"0.95rem" }}>{topic.label}</span>
-      <span style={{ color:"#B0A0C0", fontSize:"0.78rem" }}>({topic.ja})</span>
-    </div>
-    <button onClick={() => setShowHint(!showHint)}
-      style={{ background: showHint ? `${topic.color}20` : "#F5F5F5", border:`1px solid ${showHint ? topic.color : "#DDD"}`,
-        borderRadius:"10px", padding:"0.32rem 0.65rem", color: showHint ? topic.color : "#999", fontSize:"0.72rem", fontWeight:"600" }}>
-      💡 {showHint ? "ON" : "OFF"}
-    </button>
-  </div>
-
-  {/* Messages */}
-  <div style={{ flex:1, overflowY:"auto", padding:"1rem", display:"flex", flexDirection:"column", gap:"1rem", paddingBottom:"7rem" }}>
-    {messages.map((msg, i) => {
-      const isAI = msg.role === "assistant";
-      const parsed = isAI ? parseMsg(msg.content) : null;
-      return (
-        <div key={i} className="msg-appear" style={{ display:"flex", flexDirection:"column", alignItems: isAI ? "flex-start" : "flex-end", gap:"0.35rem" }}>
-          {isAI && (
-            <div style={{ display:"flex", alignItems:"center", gap:"0.35rem", marginBottom:"0.05rem" }}>
-              <div style={{ width:"26px", height:"26px", background:`linear-gradient(135deg,${topic.color},${topic.color}88)`,
-                borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px" }}>🤖</div>
-              <span style={{ fontSize:"0.72rem", color:"#B0A0C0", fontWeight:"600" }}>AI先生</span>
-            </div>
-          )}
-          <div style={{ maxWidth:"82%", background: isAI ? "white" : `linear-gradient(135deg,${topic.color},${topic.color}CC)`,
-            color: isAI ? "#2D1B69" : "white", borderRadius: isAI ? "4px 18px 18px 18px" : "18px 18px 4px 18px",
-            padding:"0.8rem 1rem", fontSize:"0.93rem", lineHeight:"1.6",
-            boxShadow: isAI ? "0 2px 12px rgba(0,0,0,0.08)" : `0 4px 16px ${topic.color}50` }}>
-            {isAI ? parsed.en : msg.content}
-          </div>
-          {isAI && parsed.hint && showHint && (
-            <div style={{ maxWidth:"82%", background:`${topic.color}12`, border:`1px solid ${topic.color}30`,
-              borderRadius:"4px 14px 14px 14px", padding:"0.6rem 0.9rem", fontSize:"0.8rem", color:"#5A4A6E", lineHeight:"1.6" }}>
-              <span style={{ color:topic.color, fontWeight:"700", fontSize:"0.78rem" }}>💡 ヒント: </span>
-              {parsed.hint}
-            </div>
-          )}
-        </div>
-      );
-    })}
-
-    {loading && (
-      <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
-        <div style={{ width:"26px", height:"26px", background:`linear-gradient(135deg,${topic.color},${topic.color}88)`,
-          borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px" }}>🤖</div>
-        <div style={{ background:"white", borderRadius:"4px 18px 18px 18px", padding:"0.8rem 1.1rem",
-          boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", gap:"5px", alignItems:"center" }}>
-          {[0,0.2,0.4].map((d,i) => (
-            <div key={i} style={{ width:"7px", height:"7px", background:topic.color, borderRadius:"50%",
-              animation:`bounce 0.8s ease-in-out ${d}s infinite`, opacity:0.7 }} />
-          ))}
+  // ── Topic Screen ──
+  if (!topic) return (
+    <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", padding:"2rem 1rem" }}>
+      <div style={{ textAlign:"center", marginBottom:"2rem" }}>
+        <div style={{ fontSize:"3.5rem", marginBottom:"0.4rem" }}>🌸</div>
+        <h1 style={{ fontSize:"2rem", fontWeight:"bold", color:"#2D1B69", letterSpacing:"-0.02em" }}>Eigo Chat</h1>
+        <p style={{ color:"#7C6B8E", fontSize:"0.95rem", marginTop:"0.3rem", fontStyle:"italic" }}>英検3級レベルの英会話練習</p>
+        <div style={{ marginTop:"0.8rem", background:"rgba(255,140,66,0.15)", borderRadius:"50px", padding:"0.4rem 1.2rem", display:"inline-block" }}>
+          <span style={{ color:"#FF8C42", fontSize:"0.85rem", fontWeight:"600" }}>✨ AIと英語でおしゃべりしよう！</span>
         </div>
       </div>
-    )}
-    <div ref={bottomRef} />
-  </div>
 
-  {/* Input */}
-  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:"500px",
-    background:"white", borderTop:`2px solid ${topic.color}20`, padding:"0.8rem 1rem", boxShadow:"0 -4px 20px rgba(0,0,0,0.08)" }}>
-    <div style={{ display:"flex", gap:"0.6rem", alignItems:"flex-end" }}>
-      <textarea value={input} onChange={e => setInput(e.target.value)}
-        onKeyDown={e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} }}
-        placeholder="英語でメッセージを入力... (Enter で送信)"
-        rows={1}
-        style={{ flex:1, border:`2px solid ${input?topic.color:"#E8E0F0"}`, borderRadius:"14px",
-          padding:"0.7rem 0.9rem", fontSize:"0.93rem", fontFamily:"Georgia,serif", color:"#2D1B69",
-          resize:"none", background:"#FAFAFA", transition:"border-color 0.2s", lineHeight:"1.5" }} />
-      <button onClick={send} disabled={!input.trim()||loading}
-        style={{ background: input.trim()&&!loading ? `linear-gradient(135deg,${topic.color},${topic.color}CC)` : "#E8E0F0",
-          border:"none", borderRadius:"14px", width:"44px", height:"44px", fontSize:"1.2rem",
-          display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
-          opacity: input.trim()&&!loading ? 1 : 0.5, transition:"all 0.2s" }}>
-        {loading ? "⏳" : "➤"}
-      </button>
+      <p style={{ color:"#7C6B8E", marginBottom:"1rem", fontSize:"0.9rem" }}>話したいトピックを選んでください 👇</p>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"0.9rem", width:"100%", maxWidth:"400px" }}>
+        {TOPICS.map(t => (
+          <button key={t.id} onClick={() => startChat(t)}
+            style={{ background:"white", border:`2px solid ${t.color}22`, borderRadius:"18px", padding:"1.2rem 0.8rem",
+              textAlign:"center", boxShadow:`0 4px 16px ${t.color}20`, transition:"all 0.2s" }}
+            onMouseEnter={e => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.borderColor=t.color; e.currentTarget.style.boxShadow=`0 8px 24px ${t.color}40`; }}
+            onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=`${t.color}22`; e.currentTarget.style.boxShadow=`0 4px 16px ${t.color}20`; }}>
+            <div style={{ fontSize:"2rem", marginBottom:"0.3rem" }}>{t.emoji}</div>
+            <div style={{ fontWeight:"700", color:"#2D1B69", fontSize:"0.88rem" }}>{t.label}</div>
+            <div style={{ color:"#7C6B8E", fontSize:"0.76rem", marginTop:"0.15rem" }}>{t.ja}</div>
+          </button>
+        ))}
+      </div>
+
+      <p style={{ marginTop:"1.8rem", color:"#B0A0C0", fontSize:"0.78rem", textAlign:"center" }}>
+        間違えても大丈夫！<br />やさしいAI先生が教えてくれます 😊
+      </p>
     </div>
-    <p style={{ margin:"0.35rem 0 0", fontSize:"0.7rem", color:"#C0B0D0", textAlign:"center" }}>
-      間違えても大丈夫！思い切って話してみよう ✨
-    </p>
-  </div>
-</div>
-```
+  );
 
-);
+  // ── Chat Screen ──
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", maxWidth:"500px", margin:"0 auto" }}>
+
+      {/* Header */}
+      <div style={{ background:"white", borderBottom:`3px solid ${topic.color}30`, padding:"0.9rem 1rem",
+        display:"flex", alignItems:"center", gap:"0.7rem", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+        <button onClick={() => setTopic(null)}
+          style={{ background:"#F5F0FF", border:"none", borderRadius:"10px", padding:"0.4rem 0.8rem", color:"#7C6B8E", fontSize:"0.82rem", fontWeight:"600" }}>
+          ← 戻る
+        </button>
+        <div style={{ flex:1, display:"flex", alignItems:"center", gap:"0.4rem" }}>
+          <span style={{ fontSize:"1.3rem" }}>{topic.emoji}</span>
+          <span style={{ fontWeight:"700", color:"#2D1B69", fontSize:"0.95rem" }}>{topic.label}</span>
+          <span style={{ color:"#B0A0C0", fontSize:"0.78rem" }}>({topic.ja})</span>
+        </div>
+        <button onClick={() => setShowHint(!showHint)}
+          style={{ background: showHint ? `${topic.color}20` : "#F5F5F5", border:`1px solid ${showHint ? topic.color : "#DDD"}`,
+            borderRadius:"10px", padding:"0.32rem 0.65rem", color: showHint ? topic.color : "#999", fontSize:"0.72rem", fontWeight:"600" }}>
+          💡 {showHint ? "ON" : "OFF"}
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex:1, overflowY:"auto", padding:"1rem", display:"flex", flexDirection:"column", gap:"1rem", paddingBottom:"7rem" }}>
+        {messages.map((msg, i) => {
+          const isAI = msg.role === "assistant";
+          const parsed = isAI ? parseMsg(msg.content) : null;
+          return (
+            <div key={i} className="msg-appear" style={{ display:"flex", flexDirection:"column", alignItems: isAI ? "flex-start" : "flex-end", gap:"0.35rem" }}>
+              {isAI && (
+                <div style={{ display:"flex", alignItems:"center", gap:"0.35rem", marginBottom:"0.05rem" }}>
+                  <div style={{ width:"26px", height:"26px", background:`linear-gradient(135deg,${topic.color},${topic.color}88)`,
+                    borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px" }}>🤖</div>
+                  <span style={{ fontSize:"0.72rem", color:"#B0A0C0", fontWeight:"600" }}>AI先生</span>
+                </div>
+              )}
+              <div style={{ maxWidth:"82%", background: isAI ? "white" : `linear-gradient(135deg,${topic.color},${topic.color}CC)`,
+                color: isAI ? "#2D1B69" : "white", borderRadius: isAI ? "4px 18px 18px 18px" : "18px 18px 4px 18px",
+                padding:"0.8rem 1rem", fontSize:"0.93rem", lineHeight:"1.6",
+                boxShadow: isAI ? "0 2px 12px rgba(0,0,0,0.08)" : `0 4px 16px ${topic.color}50` }}>
+                {isAI ? parsed.en : msg.content}
+              </div>
+              {isAI && parsed.hint && showHint && (
+                <div style={{ maxWidth:"82%", background:`${topic.color}12`, border:`1px solid ${topic.color}30`,
+                  borderRadius:"4px 14px 14px 14px", padding:"0.6rem 0.9rem", fontSize:"0.8rem", color:"#5A4A6E", lineHeight:"1.6" }}>
+                  <span style={{ color:topic.color, fontWeight:"700", fontSize:"0.78rem" }}>💡 ヒント: </span>
+                  {parsed.hint}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {loading && (
+          <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
+            <div style={{ width:"26px", height:"26px", background:`linear-gradient(135deg,${topic.color},${topic.color}88)`,
+              borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px" }}>🤖</div>
+            <div style={{ background:"white", borderRadius:"4px 18px 18px 18px", padding:"0.8rem 1.1rem",
+              boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", gap:"5px", alignItems:"center" }}>
+              {[0,0.2,0.4].map((d,i) => (
+                <div key={i} style={{ width:"7px", height:"7px", background:topic.color, borderRadius:"50%",
+                  animation:`bounce 0.8s ease-in-out ${d}s infinite`, opacity:0.7 }} />
+              ))}
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:"500px",
+        background:"white", borderTop:`2px solid ${topic.color}20`, padding:"0.8rem 1rem", boxShadow:"0 -4px 20px rgba(0,0,0,0.08)" }}>
+        <div style={{ display:"flex", gap:"0.6rem", alignItems:"flex-end" }}>
+          <textarea value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} }}
+            placeholder="英語でメッセージを入力... (Enter で送信)"
+            rows={1}
+            style={{ flex:1, border:`2px solid ${input?topic.color:"#E8E0F0"}`, borderRadius:"14px",
+              padding:"0.7rem 0.9rem", fontSize:"0.93rem", fontFamily:"Georgia,serif", color:"#2D1B69",
+              resize:"none", background:"#FAFAFA", transition:"border-color 0.2s", lineHeight:"1.5" }} />
+          <button onClick={send} disabled={!input.trim()||loading}
+            style={{ background: input.trim()&&!loading ? `linear-gradient(135deg,${topic.color},${topic.color}CC)` : "#E8E0F0",
+              border:"none", borderRadius:"14px", width:"44px", height:"44px", fontSize:"1.2rem",
+              display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+              opacity: input.trim()&&!loading ? 1 : 0.5, transition:"all 0.2s" }}>
+            {loading ? "⏳" : "➤"}
+          </button>
+        </div>
+        <p style={{ margin:"0.35rem 0 0", fontSize:"0.7rem", color:"#C0B0D0", textAlign:"center" }}>
+          間違えても大丈夫！思い切って話してみよう ✨
+        </p>
+      </div>
+    </div>
+  );
 }
 
-ReactDOM.createRoot(document.getElementById(“root”)).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
-
 </body>
 </html>
