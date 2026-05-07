@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -122,6 +123,8 @@ if (!topic) return (
 <span style={{ color:”#FF8C42”, fontSize:“0.85rem”, fontWeight:“600” }}>✨ AIと英語でおしゃべりしよう！</span>
 </div>
 </div>
+
+```
   <p style={{ color:"#7C6B8E", marginBottom:"1rem", fontSize:"0.9rem" }}>話したいトピックを選んでください 👇</p>
 
   <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"0.9rem", width:"100%", maxWidth:"400px" }}>
@@ -142,12 +145,15 @@ if (!topic) return (
     間違えても大丈夫！<br />やさしいAI先生が教えてくれます 😊
   </p>
 </div>
+```
 
 );
 
 // ── Chat Screen ──
 return (
 <div style={{ minHeight:“100vh”, display:“flex”, flexDirection:“column”, maxWidth:“500px”, margin:“0 auto” }}>
+
+```
   {/* Header */}
   <div style={{ background:"white", borderBottom:`3px solid ${topic.color}30`, padding:"0.9rem 1rem",
     display:"flex", alignItems:"center", gap:"0.7rem", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
@@ -238,6 +244,7 @@ return (
     </p>
   </div>
 </div>
+```
 
 );
 }
