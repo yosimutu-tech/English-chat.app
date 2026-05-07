@@ -13,7 +13,7 @@
     @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     .msg-appear { animation: fadeIn 0.3s ease forwards; }
-    textarea:focus { outline: none; }
+    textarea:focus, input:focus { outline: none; }
     button { cursor: pointer; }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -47,6 +47,9 @@ Rules:
 - Keep responses SHORT (2-4 sentences max before the hint section).`;
 
 function App() {
+  const [apiKey, setApiKey] = React.useState("");
+  const [apiKeyInput, setApiKeyInput] = React.useState("");
+  const [keyError, setKeyError] = React.useState("");
   const [topic, setTopic] = React.useState(null);
   const [messages, setMessages] = React.useState([]);
   const [input, setInput] = React.useState("");
@@ -58,18 +61,34 @@ function App() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  const handleKeySubmit = () => {
+    const k = apiKeyInput.trim();
+    if (!k.startsWith("sk-ant-")) {
+      setKeyError("APIキーは「sk-ant-」で始まります。確認してください。");
+      return;
+    }
+    setApiKey(k);
+    setKeyError("");
+  };
+
   const callAPI = async (msgs) => {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1000,
         system: SYSTEM_PROMPT,
         messages: msgs,
       }),
     });
     const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
     return data.content?.find(b => b.type === "text")?.text || "Sorry, please try again! 😅";
   };
 
@@ -84,7 +103,7 @@ function App() {
       }]);
       setMessages([{ role: "assistant", content: text }]);
     } catch(e) {
-      setMessages([{ role: "assistant", content: "Sorry! Something went wrong. Please try again. 😅" }]);
+      setMessages([{ role: "assistant", content: "エラーが起きました。APIキーを確認してください。😅" }]);
     }
     setLoading(false);
   };
@@ -110,6 +129,55 @@ function App() {
     return { en: parts[0].trim(), hint: parts[1]?.trim() || null };
   };
 
+  // ── API Key Screen ──
+  if (!apiKey) return (
+    <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"2rem 1.5rem" }}>
+      <div style={{ textAlign:"center", marginBottom:"2rem" }}>
+        <div style={{ fontSize:"3rem", marginBottom:"0.5rem" }}>🌸</div>
+        <h1 style={{ fontSize:"1.8rem", fontWeight:"bold", color:"#2D1B69" }}>Eigo Chat</h1>
+        <p style={{ color:"#7C6B8E", fontSize:"0.9rem", marginTop:"0.3rem" }}>英検3級レベルの英会話練習</p>
+      </div>
+
+      <div style={{ width:"100%", maxWidth:"380px", background:"white", borderRadius:"20px",
+        padding:"1.8rem 1.5rem", boxShadow:"0 8px 32px rgba(100,60,150,0.12)" }}>
+        <h2 style={{ fontSize:"1rem", fontWeight:"700", color:"#2D1B69", marginBottom:"0.5rem" }}>
+          🔑 APIキーを入力
+        </h2>
+        <p style={{ fontSize:"0.8rem", color:"#7C6B8E", marginBottom:"1.2rem", lineHeight:"1.6" }}>
+          Anthropic Platform（platform.claude.com）で取得したAPIキーを入力してください。<br/>
+          キーはこの端末のメモリのみに保存され、外部には送信されません。
+        </p>
+
+        <input
+          type="password"
+          value={apiKeyInput}
+          onChange={e => { setApiKeyInput(e.target.value); setKeyError(""); }}
+          onKeyDown={e => e.key === "Enter" && handleKeySubmit()}
+          placeholder="sk-ant-api03-..."
+          style={{ width:"100%", border:"2px solid #E8E0F0", borderRadius:"12px",
+            padding:"0.75rem 1rem", fontSize:"0.9rem", color:"#2D1B69",
+            background:"#FAFAFA", marginBottom:"0.8rem", fontFamily:"monospace" }}
+        />
+
+        {keyError && (
+          <p style={{ color:"#FF4466", fontSize:"0.78rem", marginBottom:"0.8rem" }}>{keyError}</p>
+        )}
+
+        <button onClick={handleKeySubmit}
+          style={{ width:"100%", background:"linear-gradient(135deg, #FF8C42, #FF6B9D)",
+            border:"none", borderRadius:"12px", padding:"0.85rem", color:"white",
+            fontSize:"1rem", fontWeight:"700", boxShadow:"0 4px 16px rgba(255,107,157,0.4)" }}>
+          はじめる 🌸
+        </button>
+
+        <p style={{ marginTop:"1rem", fontSize:"0.73rem", color:"#C0B0D0", textAlign:"center", lineHeight:"1.6" }}>
+          APIキーの取得方法：<br/>
+          platform.claude.com → APIキー → ＋キー
+        </p>
+      </div>
+    </div>
+  );
+
   // ── Topic Screen ──
   if (!topic) return (
     <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", padding:"2rem 1rem" }}>
@@ -129,8 +197,8 @@ function App() {
           <button key={t.id} onClick={() => startChat(t)}
             style={{ background:"white", border:`2px solid ${t.color}22`, borderRadius:"18px", padding:"1.2rem 0.8rem",
               textAlign:"center", boxShadow:`0 4px 16px ${t.color}20`, transition:"all 0.2s" }}
-            onMouseEnter={e => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.borderColor=t.color; e.currentTarget.style.boxShadow=`0 8px 24px ${t.color}40`; }}
-            onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=`${t.color}22`; e.currentTarget.style.boxShadow=`0 4px 16px ${t.color}20`; }}>
+            onMouseEnter={e => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.borderColor=t.color; }}
+            onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=`${t.color}22`; }}>
             <div style={{ fontSize:"2rem", marginBottom:"0.3rem" }}>{t.emoji}</div>
             <div style={{ fontWeight:"700", color:"#2D1B69", fontSize:"0.88rem" }}>{t.label}</div>
             <div style={{ color:"#7C6B8E", fontSize:"0.76rem", marginTop:"0.15rem" }}>{t.ja}</div>
@@ -138,7 +206,13 @@ function App() {
         ))}
       </div>
 
-      <p style={{ marginTop:"1.8rem", color:"#B0A0C0", fontSize:"0.78rem", textAlign:"center" }}>
+      <button onClick={() => setApiKey("")}
+        style={{ marginTop:"1.5rem", background:"none", border:"1px solid #E0D0F0", borderRadius:"10px",
+          padding:"0.4rem 1rem", color:"#B0A0C0", fontSize:"0.75rem" }}>
+        🔑 APIキーを変更
+      </button>
+
+      <p style={{ marginTop:"1rem", color:"#B0A0C0", fontSize:"0.78rem", textAlign:"center" }}>
         間違えても大丈夫！<br />やさしいAI先生が教えてくれます 😊
       </p>
     </div>
@@ -147,8 +221,6 @@ function App() {
   // ── Chat Screen ──
   return (
     <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", maxWidth:"500px", margin:"0 auto" }}>
-
-      {/* Header */}
       <div style={{ background:"white", borderBottom:`3px solid ${topic.color}30`, padding:"0.9rem 1rem",
         display:"flex", alignItems:"center", gap:"0.7rem", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
         <button onClick={() => setTopic(null)}
@@ -167,7 +239,6 @@ function App() {
         </button>
       </div>
 
-      {/* Messages */}
       <div style={{ flex:1, overflowY:"auto", padding:"1rem", display:"flex", flexDirection:"column", gap:"1rem", paddingBottom:"7rem" }}>
         {messages.map((msg, i) => {
           const isAI = msg.role === "assistant";
@@ -175,7 +246,7 @@ function App() {
           return (
             <div key={i} className="msg-appear" style={{ display:"flex", flexDirection:"column", alignItems: isAI ? "flex-start" : "flex-end", gap:"0.35rem" }}>
               {isAI && (
-                <div style={{ display:"flex", alignItems:"center", gap:"0.35rem", marginBottom:"0.05rem" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"0.35rem" }}>
                   <div style={{ width:"26px", height:"26px", background:`linear-gradient(135deg,${topic.color},${topic.color}88)`,
                     borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px" }}>🤖</div>
                   <span style={{ fontSize:"0.72rem", color:"#B0A0C0", fontWeight:"600" }}>AI先生</span>
@@ -214,7 +285,6 @@ function App() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:"500px",
         background:"white", borderTop:`2px solid ${topic.color}20`, padding:"0.8rem 1rem", boxShadow:"0 -4px 20px rgba(0,0,0,0.08)" }}>
         <div style={{ display:"flex", gap:"0.6rem", alignItems:"flex-end" }}>
